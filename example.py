@@ -2,6 +2,7 @@ import AutomateBrowser
 import os, sys, signal, threading, time
 from functools import partial
 
+
 os.environ['FOR_DISABLE_CONSOLE_CTRL_HANDLER'] = '1'
 
 def shutdownSignalHandler(args, signum=99999, frame=None):
@@ -41,7 +42,10 @@ if __name__ == "__main__":
 
     ab = AutomateBrowser("http://google.com", './cookies.json', closeTimeout=0, headless=False)
     
-    httpServer = ThreadingHTTPServer(('localhost',8080), partial(SomeHTTPServer, "some argument to pass"))
+    # Setup SomeHTTPServer instance
+    httpServerAddr = ('localhost', 8080)
+    print("[*] httpServer init [ %s:%d ]" % httpServerAddr)
+    httpServer = ThreadingHTTPServer(httpServerAddr, partial(SomeHTTPServer, "some argument to pass"))
 
     # Register the signal handler for SIGTERM
     signal.signal(signal.SIGTERM, partial(shutdownSignalHandler, (ab, SomeHTTPServer)))
