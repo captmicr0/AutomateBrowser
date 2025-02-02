@@ -1,33 +1,55 @@
-#from selenium import webdriver
-import undetected_chromedriver as driver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import NoSuchElementException, TimeoutException
 
-import os, threading
+import os, sys, threading, tempfile
 import pickle, pprint, time
 
 class AutomateBrowser:
-    def __init__(self, baseUrl, cookieFile, closeTimeout=5*60, headless=True):
+    def __init__(self,
+                 baseUrl,
+                 cookieFile,
+                 closeTimeout=0,
+                 headless=True,
+                 undetectedDriver=False,
+                 binary_location='',
+                 executeable_path=''):
         print("[AutomateBrowser.__init__]")
 
         # Save for later
         self.cookieFile = cookieFile
         self.baseUrl = baseUrl
 
+        # Browser close timeout
         self.closeTimeout = closeTimeout
         self.lastCheckedOpen = time.time()
         self.timeoutThreadRunning = True
         self.timeoutThread = threading.Thread(target=self.browserCloseTimeout)
         self.timeoutThread.start()
 
+        self.headless = headless
+
+        self.undetectedDriver = undetectedDriver
+        if undetectedDriver:
+            import undetected_chromedriver as uc_driver
+            self.driver = uc_driver
+        else:
+            from selenium import webdriver as sl_driver
+            self.driver = sl_driver
+        
+        self.binary_location = binary_location
+        self.executeable_path = executeable_path
+
         # Configure chrome options
-        self.chrome_options = driver.ChromeOptions()
+        self.chrome_options = self.driver.ChromeOptions()
+        self.chrome_options.binary_location = self.binary_location
         self.chrome_options.add_argument('--no-sandbox')
-        if (headless): self.chrome_options.add_argument('--headless')
+        if (self.headless): self.chrome_options.add_argument('--headless')
         self.chrome_options.add_argument('--disable-gpu')
-        self.chrome_options.add_argument('--single-process')
+        if sys.platform != "win32":
+            # this causes the browser to instantly close on windows, at least without headless
+            self.chrome_options.add_argument('--single-process')
         self.chrome_options.add_argument('--no-zygote')
         self.chrome_options.add_argument("--window-size=1280,720")
 
@@ -58,7 +80,14 @@ class AutomateBrowser:
     
     def openBrowser(self):
         # Open browser
-        self.webdriver = driver.Chrome(options=self.chrome_options)
+        if self.undetectedDriver:
+            self.webdriver = self.driver.Chrome(
+                options=self.chrome_options,
+                executable_path=self.executeable_path)
+        else:
+            self.webdriver = self.driver.Chrome(
+                options=self.chrome_options)
+        
         self.webdriver.command_executor.set_timeout(10)
 
         # Setup wait for later
@@ -101,7 +130,15 @@ class AutomateBrowser:
     def closeBrowser(self):
         # Exit browser
         try:
-            if self.checkBrowserOpen(): self.webdriver.quit()
+            if self.checkBrowserOpen():
+                try:
+                    self.webdriver.close()
+                except:
+                    pass
+                try:
+                    self.webdriver.quit()
+                except:
+                    pass
         except:
             # Already closed
             pass
@@ -143,3 +180,51 @@ class AutomateBrowser:
 
         print("[AutomateBrowser.loadCookies] cookie file " + self.cookieFile + " does not exist.")
         return False
+
+    def inNewTabStart(self):
+        # Open a new tab
+        numWindowsBefore = len(self.webdriver.window_handles)
+        windowBefore = self.webdriver.current_window_handle
+
+        self.webdriver.switch_to.new_window('tab')
+
+        # Wait until new tab is open
+        self.wait.until(EC.number_of_windows_to_be(numWindowsBefore + 1))
+
+        return (numWindowsBefore, windowBefore)
+
+    def inNewTabEnd(self, newTabData):
+        numWindowsBefore, windowBefore = newTabData
+
+        # Close tab and switch to original window
+        self.webdriver.close()
+        self.webdriver.switch_to.window(windowBefore)
+    
+    def handleUnknowFormSituation(self):
+        # Return a path to screenshot of current page
+        # and a list of <form> <input>'s IDs and types
+        print("[AutomateBrowser.handleUnknowFormSituation] Unknown <form> sitation handler")
+        
+        # Take screenshot of webpage
+        with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as temp_file:
+            self.webdriver.save_screenshot(temp_file)
+            print(f"[AutomateBrowser.handleUnknowFormSituation] Saved screenshot to {temp_file}")
+
+        # Gather list of <form> inputs by ID
+        print("[AutomateBrowser.handleUnknowFormSituation] List of <form> <input>'s on page")
+        form_inputs = []
+        try:
+            forms = self.wait.until(EC.presence_of_all_elements_located((By.TAG_NAME, "form")))
+            for form in forms:
+                inputs = form.find_elements(By.TAG_NAME, "input")
+                for input_element in inputs:
+                    input_id = input_element.get_attribute("id")
+                    input_type = input_element.get_attribute("type")
+                    if input_id:
+                        form_inputs.append((input_id, input_type))
+                        print(f"[AutomateBrowser.handleUnknowFormSituation] #{input_id} ({input_type})")
+        except Exception as e:
+            print(f"[AutomateBrowser.handleUnknowFormSituation] Error finding form inputs: {str(e)}")
+        
+        return temp_file, form_inputs
+        

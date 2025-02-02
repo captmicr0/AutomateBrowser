@@ -1,4 +1,4 @@
-import AutomateBrowser
+from AutomateBrowser import AutomateBrowser
 import os, sys, signal, threading, time
 from functools import partial
 
@@ -40,7 +40,13 @@ class SomeHTTPServer(BaseHTTPRequestHandler):
 if __name__ == "__main__":
     print("[*] AutomateBrowser example starting...")
 
-    ab = AutomateBrowser("http://google.com", './cookies.json', closeTimeout=0, headless=False)
+    ab = AutomateBrowser("http://amazon.com",
+                         './cookies.json',
+                         headless=False,
+                         undetectedDriver=True,
+                         binary_location='K:/GitRepo/atozaccepter/chrome-win64/chrome.exe',
+                         executeable_path='K:/GitRepo/atozaccepter/chromedriver-win64/chromedriver.exe')
+    ab.openBrowser()
     
     # Setup SomeHTTPServer instance
     httpServerAddr = ('localhost', 8080)
@@ -48,13 +54,13 @@ if __name__ == "__main__":
     httpServer = ThreadingHTTPServer(httpServerAddr, partial(SomeHTTPServer, "some argument to pass"))
 
     # Register the signal handler for SIGTERM
-    signal.signal(signal.SIGTERM, partial(shutdownSignalHandler, (ab, SomeHTTPServer)))
-    signal.signal(signal.SIGINT, partial(shutdownSignalHandler, (ab, SomeHTTPServer)))
+    signal.signal(signal.SIGTERM, partial(shutdownSignalHandler, (ab, httpServer)))
+    signal.signal(signal.SIGINT, partial(shutdownSignalHandler, (ab, httpServer)))
 
     # Windows specific signal handler fix
     if sys.platform == "win32":
         import win32api
-        win32api.SetConsoleCtrlHandler(partial(shutdownSignalHandler, (ab, SomeHTTPServer)), True)
+        win32api.SetConsoleCtrlHandler(partial(shutdownSignalHandler, (ab, httpServer)), True)
     
     # Create threads
     print("[*] creating threads")
