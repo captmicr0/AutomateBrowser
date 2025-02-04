@@ -227,4 +227,3 @@ class AutomateBrowser:
             print(f"[AutomateBrowser.handleUnknowFormSituation] Error finding form inputs: {str(e)}")
         
         return temp_file, form_inputs
-        
