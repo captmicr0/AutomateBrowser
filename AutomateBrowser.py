@@ -134,10 +134,12 @@ class AutomateBrowser:
                 try:
                     self.webdriver.close()
                 except:
+                    print("[AutomateBrowser.closeBrowser] self.webdriver.close() failed")
                     pass
                 try:
                     self.webdriver.quit()
                 except:
+                    print("[AutomateBrowser.closeBrowser] self.webdriver.quit() failed")
                     pass
         except:
             # Already closed
