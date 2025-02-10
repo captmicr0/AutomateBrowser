@@ -52,6 +52,12 @@ class AutomateBrowser:
             self.chrome_options.add_argument('--single-process')
         self.chrome_options.add_argument('--no-zygote')
         self.chrome_options.add_argument("--window-size=1280,720")
+        
+        # Disable "Save password?" popup dialog
+        self.chrome_options.add_experimental_option("prefs", {
+            "credentials_enable_service": False,
+            "profile.password_manager_enabled": False
+        })
 
         self.chrome_options.add_argument('--disable-dev-shm-usage')
         self.chrome_options.add_argument("--disable-extensions")
