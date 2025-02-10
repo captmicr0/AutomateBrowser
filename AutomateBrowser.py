@@ -226,11 +226,12 @@ class AutomateBrowser:
             for form in forms:
                 inputs = form.find_elements(By.TAG_NAME, "input")
                 for input_element in inputs:
-                    input_id = input_element.get_attribute("id")
+                    input_name = input_element.get_attribute("name")
                     input_type = input_element.get_attribute("type")
-                    if input_id:
-                        form_inputs.append((input_id, input_type))
-                        print(f"[AutomateBrowser.handleUnknowFormSituation] #{input_id} ({input_type})")
+                    input_hidden = input_element.get_attribute("hidden")
+                    if input_name and (input_type != 'hidden') and (not input_hidden):
+                        form_inputs.append((input_name, input_type))
+                        print(f"[AutomateBrowser.handleUnknowFormSituation] <input name='{input_name}' type='{input_type}'/>")
         except Exception as e:
             print(f"[AutomateBrowser.handleUnknowFormSituation] Error finding form inputs: {str(e)}")
         
