@@ -157,6 +157,7 @@ class AutomateBrowser:
             pass
     
     def shutdown(self):
+        self.saveCookies()
         self.timeoutThreadRunning = False
         self.closeBrowser()
     
