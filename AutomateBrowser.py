@@ -2,7 +2,8 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import NoSuchElementException, TimeoutException
-from selenium_stealth import stealth
+
+from pyvirtualdisplay import Display
 
 import os, sys, threading, tempfile
 import pickle, pprint, time, signal
@@ -42,6 +43,10 @@ class AutomateBrowser:
         self.browser_executable_path = browser_executable_path
         self.driver_executable_path = driver_executable_path
 
+        if self.headless:
+            self.display = Display(visible=0, size=(1280, 720))
+            self.display.start()
+
         # Configure chrome options
         self.chrome_options = self.driver.ChromeOptions()
         self.chrome_options.add_argument('--no-sandbox')
@@ -58,9 +63,6 @@ class AutomateBrowser:
             "credentials_enable_service": False,
             "profile.password_manager_enabled": False
         })
-
-        self.chrome_options.add_experimental_option("excludeSwitches", ["enable-automation"])
-        self.chrome_options.add_experimental_option('useAutomationExtension', False)
 
         self.chrome_options.add_argument('--disable-dev-shm-usage')
         self.chrome_options.add_argument("--disable-extensions")
@@ -101,15 +103,6 @@ class AutomateBrowser:
         else:
             self.webdriver = self.driver.Chrome(
                 options=self.chrome_options)
-        
-        stealth(self.webdriver,
-            languages=["en-US", "en"],
-            vendor="Google Inc.",
-            platform="Win32",
-            webgl_vendor="Intel Inc.",
-            renderer="Intel Iris OpenGL Engine",
-            fix_hairline=True,
-        )
 
         self.webdriver.command_executor.set_timeout(10)
 
@@ -165,6 +158,8 @@ class AutomateBrowser:
         self.timeoutThreadRunning = False
         try:
             self.closeBrowser()
+            if self.headless:
+                self.display.stop()
         except Exception as e:
             print(f"[AutomateBrowser.shutdown] error shutting down: {e}")
     
