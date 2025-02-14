@@ -3,8 +3,6 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import NoSuchElementException, TimeoutException
 
-from pyvirtualdisplay import Display
-
 import os, sys, threading, tempfile
 import pickle, pprint, time, signal
 
@@ -43,10 +41,6 @@ class AutomateBrowser:
         self.browser_executable_path = browser_executable_path
         self.driver_executable_path = driver_executable_path
 
-        if self.headless:
-            self.display = Display(visible=0, size=(1280, 720))
-            self.display.start()
-
         # Configure chrome options
         self.chrome_options = self.driver.ChromeOptions()
         self.chrome_options.add_argument('--no-sandbox')
@@ -56,7 +50,7 @@ class AutomateBrowser:
             # this causes the browser to instantly close on windows, at least without headless
             self.chrome_options.add_argument('--single-process')
         self.chrome_options.add_argument('--no-zygote')
-        self.chrome_options.add_argument("--window-size=1280,720")
+        self.chrome_options.add_argument("--window-size=1280,1280")
         
         # Disable "Save password?" popup dialog
         self.chrome_options.add_experimental_option("prefs", {
@@ -90,6 +84,8 @@ class AutomateBrowser:
                 time.sleep(10)
     
     def openBrowser(self):
+        print("[AutomateBrowser.openBrowser]")
+
         # Open browser
         if self.undetectedDriver:
             if (self.browser_executable_path and self.driver_executable_path):
@@ -97,6 +93,14 @@ class AutomateBrowser:
                     options=self.chrome_options,
                     browser_executable_path=self.browser_executable_path,
                     driver_executable_path=self.driver_executable_path)
+            elif self.driver_executable_path:
+                self.webdriver = self.driver.Chrome(
+                    options=self.chrome_options,
+                    driver_executable_path=self.driver_executable_path)
+            elif self.browser_executable_path:
+                self.webdriver = self.driver.Chrome(
+                    options=self.chrome_options,
+                    browser_executable_path=self.browser_executable_path)
             else:
                 self.webdriver = self.driver.Chrome(
                     options=self.chrome_options)
@@ -139,6 +143,8 @@ class AutomateBrowser:
         self.lastCheckedOpen = time.time()
     
     def closeBrowser(self):
+        print("[AutomateBrowser.closeBrowser]")
+
         # Exit browser
         try:
             if self.checkBrowserOpen():
@@ -158,8 +164,6 @@ class AutomateBrowser:
         self.timeoutThreadRunning = False
         try:
             self.closeBrowser()
-            if self.headless:
-                self.display.stop()
         except Exception as e:
             print(f"[AutomateBrowser.shutdown] error shutting down: {e}")
     
@@ -200,7 +204,10 @@ class AutomateBrowser:
 
         print("[AutomateBrowser.loadCookies] cookie file " + self.cookieFile + " does not exist.")
         return False
-
+    
+    def get_shadow_root(self, shadow_host):
+        return self.webdriver.execute_script('return arguments[0].shadowRoot', shadow_host)
+    
     def inNewTabStart(self):
         # Open a new tab
         numWindowsBefore = len(self.webdriver.window_handles)
