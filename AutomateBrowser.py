@@ -43,7 +43,8 @@ class AutomateBrowser:
 
         # Configure chrome options
         self.chrome_options = self.driver.ChromeOptions()
-        self.chrome_options.binary_location = self.binary_location
+        if (self.binary_location):
+            self.chrome_options.binary_location = self.binary_location
         self.chrome_options.add_argument('--no-sandbox')
         if (self.headless): self.chrome_options.add_argument('--headless')
         self.chrome_options.add_argument('--disable-gpu')
@@ -87,9 +88,13 @@ class AutomateBrowser:
     def openBrowser(self):
         # Open browser
         if self.undetectedDriver:
-            self.webdriver = self.driver.Chrome(
-                options=self.chrome_options,
-                executable_path=self.executeable_path)
+            if (self.executeable_path):
+                self.webdriver = self.driver.Chrome(
+                    options=self.chrome_options,
+                    executable_path=self.executeable_path)
+            else:
+                self.webdriver = self.driver.Chrome(
+                    options=self.chrome_options)
         else:
             self.webdriver = self.driver.Chrome(
                 options=self.chrome_options)
