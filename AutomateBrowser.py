@@ -120,38 +120,26 @@ class AutomateBrowser:
     
     def checkBrowserOpen(self):
         try:
-            # This will raise an exception if browser is not open
             temp = self.webdriver.window_handles
             return True
-        except:
+        except Exception as e:
             return False
 
     def ensureBrowserOpen(self):
         # Make sure browser is open
         if not self.checkBrowserOpen():
             self.openBrowser()
-        
+
         self.lastCheckedOpen = time.time()
     
     def closeBrowser(self):
         # Exit browser
         try:
             if self.checkBrowserOpen():
-                browser_pid = self.webdriver.browser_pid
-                #try:
-                #    self.webdriver.close()
-                #except Exception as e:
-                #    print("[AutomateBrowser.closeBrowser] self.webdriver.close() failed")
-                #    raise Exception(e)
                 try:
                     self.webdriver.quit()
                 except Exception as e:
                     print("[AutomateBrowser.closeBrowser] self.webdriver.quit() failed")
-                    raise Exception(e)
-                try:
-                    os.kill(browser_pid, signal.SIGTERM)
-                except Exception as e:
-                    print(f"[AutomateBrowser.closeBrowser] kill PID {browser_pid} failed")
                     raise Exception(e)
             else:
                 print("[AutomateBrowser.closeBrowser] browser not open")
