@@ -4,7 +4,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import NoSuchElementException, TimeoutException
 
 import os, sys, threading, tempfile
-import pickle, pprint, time
+import pickle, pprint, time, signal
 
 class AutomateBrowser:
     def __init__(self,
@@ -128,31 +128,35 @@ class AutomateBrowser:
 
     def ensureBrowserOpen(self):
         # Make sure browser is open
-        try:
-            # This will raise an exception if browser is not open
-            temp = self.webdriver.current_url
-        except:
+        if not self.checkBrowserOpen():
             self.openBrowser()
-        finally:
-            # Save the time for close timeout
-            self.lastCheckedOpen = time.time()
+        
+        self.lastCheckedOpen = time.time()
     
     def closeBrowser(self):
         # Exit browser
         try:
             if self.checkBrowserOpen():
-                try:
-                    self.webdriver.close()
-                except:
-                    print("[AutomateBrowser.closeBrowser] self.webdriver.close() failed")
-                    pass
+                browser_pid = self.webdriver.browser_pid
+                #try:
+                #    self.webdriver.close()
+                #except Exception as e:
+                #    print("[AutomateBrowser.closeBrowser] self.webdriver.close() failed")
+                #    raise Exception(e)
                 try:
                     self.webdriver.quit()
-                except:
+                except Exception as e:
                     print("[AutomateBrowser.closeBrowser] self.webdriver.quit() failed")
-                    pass
-        except:
-            # Already closed
+                    raise Exception(e)
+                try:
+                    os.kill(browser_pid, signal.SIGTERM)
+                except Exception as e:
+                    print(f"[AutomateBrowser.closeBrowser] kill PID {browser_pid} failed")
+                    raise Exception(e)
+            else:
+                print("[AutomateBrowser.closeBrowser] browser not open")
+        except Exception as e:
+            print(f"[AutomateBrowser.closeBrowser] error: {e}")
             pass
     
     def shutdown(self):
@@ -170,7 +174,7 @@ class AutomateBrowser:
 
         print("[AutomateBrowser.saveCookies] saving cookies in " + self.cookieFile)
         pickle.dump(self.webdriver.get_cookies() , open(self.cookieFile,"wb"))
-        pprint.pp(self.webdriver.get_cookies())
+        #pprint.pp(self.webdriver.get_cookies())
 
     def loadCookies(self):
         if not self.checkBrowserOpen():
