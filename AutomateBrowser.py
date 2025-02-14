@@ -158,17 +158,24 @@ class AutomateBrowser:
     def shutdown(self):
         self.saveCookies()
         self.timeoutThreadRunning = False
-        self.closeBrowser()
+        try:
+            self.closeBrowser()
+        except Exception as e:
+            print(f"[AutomateBrowser.shutdown] error shutting down: {e}")
     
     def saveCookies(self):
-        if not self.checkBrowserOpen(): return
+        if not self.checkBrowserOpen():
+            print("[AutomateBrowser.saveCookies] browser not open")
+            return
 
         print("[AutomateBrowser.saveCookies] saving cookies in " + self.cookieFile)
         pickle.dump(self.webdriver.get_cookies() , open(self.cookieFile,"wb"))
         pprint.pp(self.webdriver.get_cookies())
 
     def loadCookies(self):
-        if not self.checkBrowserOpen(): return
+        if not self.checkBrowserOpen():
+            print("[AutomateBrowser.loadCookies] browser not open")
+            return
         
         if os.path.exists(self.cookieFile) and os.path.isfile(self.cookieFile):
             print("[AutomateBrowser.loadCookies] loading cookies from " + self.cookieFile)
