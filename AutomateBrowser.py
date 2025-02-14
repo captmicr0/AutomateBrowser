@@ -2,6 +2,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import NoSuchElementException, TimeoutException
+from selenium_stealth import stealth
 
 import os, sys, threading, tempfile
 import pickle, pprint, time, signal
@@ -58,6 +59,9 @@ class AutomateBrowser:
             "profile.password_manager_enabled": False
         })
 
+        self.chrome_options.add_experimental_option("excludeSwitches", ["enable-automation"])
+        self.chrome_options.add_experimental_option('useAutomationExtension', False)
+
         self.chrome_options.add_argument('--disable-dev-shm-usage')
         self.chrome_options.add_argument("--disable-extensions")
         self.chrome_options.add_argument("--disable-renderer-backgrounding")
@@ -98,6 +102,15 @@ class AutomateBrowser:
             self.webdriver = self.driver.Chrome(
                 options=self.chrome_options)
         
+        stealth(self.webdriver,
+            languages=["en-US", "en"],
+            vendor="Google Inc.",
+            platform="Win32",
+            webgl_vendor="Intel Inc.",
+            renderer="Intel Iris OpenGL Engine",
+            fix_hairline=True,
+        )
+
         self.webdriver.command_executor.set_timeout(10)
 
         # Setup wait for later
