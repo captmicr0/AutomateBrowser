@@ -108,10 +108,10 @@ class AutomateBrowser:
             self.webdriver = self.driver.Chrome(
                 options=self.chrome_options)
 
-        self.webdriver.command_executor.set_timeout(20)
+        self.webdriver.command_executor.set_timeout(6)
 
         # Setup wait for later
-        self.wait = WebDriverWait(self.webdriver, 10)
+        self.wait = WebDriverWait(self.webdriver, 6)
 
         # Wait for it to open
         self.webdriver.get(self.baseUrl)
