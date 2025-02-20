@@ -67,8 +67,8 @@ class AutomateBrowser:
         self.chrome_options.add_argument("--disable-crash-reporter")
         self.chrome_options.add_argument("--disable-oopr-debug-crash-dump")
         self.chrome_options.add_argument("--no-crash-upload")
-        self.chrome_options.add_argument("--silent")
-        self.chrome_options.add_argument('log-level=3')
+        #self.chrome_options.add_argument("--silent")
+        #self.chrome_options.add_argument('log-level=3')
     
     def browserCloseTimeout(self):
         # Check if the browser had any activity for the last
