@@ -3,7 +3,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import NoSuchElementException, TimeoutException
 
-import os, sys, threading, tempfile
+import os, sys, threading, tempfile, random
 import pickle, pprint, time, signal
 
 class AutomateBrowser:
@@ -14,7 +14,8 @@ class AutomateBrowser:
                  headless=True,
                  undetectedDriver=False,
                  browser_executable_path='',
-                 driver_executable_path=''):
+                 driver_executable_path='',
+                 user_data_dir=''):
         print("[AutomateBrowser.__init__]")
 
         # Save for later
@@ -38,37 +39,41 @@ class AutomateBrowser:
             from selenium import webdriver as sl_driver
             self.driver = sl_driver
         
+        
         self.browser_executable_path = browser_executable_path
         self.driver_executable_path = driver_executable_path
+        self.user_data_dir = user_data_dir
 
-        # Configure chrome options
-        self.chrome_options = self.driver.ChromeOptions()
-        self.chrome_options.add_argument('--no-sandbox')
-        if (self.headless): self.chrome_options.add_argument('--headless')
-        self.chrome_options.add_argument('--disable-gpu')
-        if sys.platform != "win32":
-            # this causes the browser to instantly close on windows, at least without headless
-            self.chrome_options.add_argument('--single-process')
-        self.chrome_options.add_argument('--no-zygote')
-        self.chrome_options.add_argument("--window-size=1280,1280")
+        self.service = self.driver.EdgeService(self.driver_executable_path)
+
+        # Configure browser options
+        self.options = self.driver.EdgeOptions()
+        self.options.add_argument('--no-sandbox')
+        if (self.headless): self.options.add_argument('--headless')
+        self.options.add_argument('--disable-gpu')
+        self.options.add_argument('--no-zygote')
+        self.options.add_argument("--window-size=1280,1280")
+
+        self.options.add_argument(f'user-data-dir={user_data_dir or tempfile.mkdtemp()}')
+        self.options.add_argument(f'--remote-debugging-port={random.randint(9200,9300)}')
         
         # Disable "Save password?" popup dialog
-        self.chrome_options.add_experimental_option("prefs", {
+        self.options.add_experimental_option("prefs", {
             "credentials_enable_service": False,
             "profile.password_manager_enabled": False
         })
 
-        self.chrome_options.add_argument('--disable-dev-shm-usage')
-        self.chrome_options.add_argument("--disable-extensions")
-        self.chrome_options.add_argument("--disable-renderer-backgrounding")
-        self.chrome_options.add_argument("--disable-background-timer-throttling")
-        self.chrome_options.add_argument("--disable-backgrounding-occluded-windows")
-        self.chrome_options.add_argument("--disable-client-side-phishing-detection")
-        self.chrome_options.add_argument("--disable-crash-reporter")
-        self.chrome_options.add_argument("--disable-oopr-debug-crash-dump")
-        self.chrome_options.add_argument("--no-crash-upload")
-        #self.chrome_options.add_argument("--silent")
-        #self.chrome_options.add_argument('log-level=3')
+        self.options.add_argument('--disable-dev-shm-usage')
+        self.options.add_argument("--disable-extensions")
+        self.options.add_argument("--disable-renderer-backgrounding")
+        self.options.add_argument("--disable-background-timer-throttling")
+        self.options.add_argument("--disable-backgrounding-occluded-windows")
+        self.options.add_argument("--disable-client-side-phishing-detection")
+        self.options.add_argument("--disable-crash-reporter")
+        self.options.add_argument("--disable-oopr-debug-crash-dump")
+        self.options.add_argument("--no-crash-upload")
+        self.options.add_argument("--silent")
+        self.options.add_argument('log-level=3')
     
     def browserCloseTimeout(self):
         # Check if the browser had any activity for the last
@@ -87,26 +92,10 @@ class AutomateBrowser:
         print("[AutomateBrowser.openBrowser]")
 
         # Open browser
-        if self.undetectedDriver:
-            if (self.browser_executable_path and self.driver_executable_path):
-                self.webdriver = self.driver.Chrome(
-                    options=self.chrome_options,
-                    browser_executable_path=self.browser_executable_path,
-                    driver_executable_path=self.driver_executable_path)
-            elif self.driver_executable_path:
-                self.webdriver = self.driver.Chrome(
-                    options=self.chrome_options,
-                    driver_executable_path=self.driver_executable_path)
-            elif self.browser_executable_path:
-                self.webdriver = self.driver.Chrome(
-                    options=self.chrome_options,
-                    browser_executable_path=self.browser_executable_path)
-            else:
-                self.webdriver = self.driver.Chrome(
-                    options=self.chrome_options)
+        if (self.driver_executable_path):
+            self.webdriver = self.driver.Edge(service=self.service, options=self.options)
         else:
-            self.webdriver = self.driver.Chrome(
-                options=self.chrome_options)
+            self.webdriver = self.driver.Edge(options=self.options)
 
         self.webdriver.command_executor.set_timeout(6)
 
