@@ -19,7 +19,7 @@ class AutomateBrowser:
                  driver_executable_path='',
                  user_data_dir=''):
         
-        self.logger = logging.getLogger('AutomateBrowser')
+        self.logger = logging.getLogger('AtoZAccept.AutomateBrowser')
         self.logger.setLevel(logging.DEBUG)
         self.logger.propagate = True  # Allow messages to propagate to the root logger
 
