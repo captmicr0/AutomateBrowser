@@ -1,3 +1,5 @@
+import logging
+
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -5,6 +7,10 @@ from selenium.common.exceptions import NoSuchElementException, TimeoutException
 
 import os, sys, threading, tempfile, random
 import pickle, pprint, time, signal
+
+logger = logging.getLogger('AutomateBrowser')
+logger.setLevel(logging.DEBUG)
+logger.propagate = True  # Allow messages to propagate to the root logger
 
 class AutomateBrowser:
     def __init__(self,
@@ -16,7 +22,7 @@ class AutomateBrowser:
                  browser_executable_path='',
                  driver_executable_path='',
                  user_data_dir=''):
-        print("[AutomateBrowser.__init__]")
+        logging.info("[AutomateBrowser.__init__]")
 
         # Save for later
         self.cookieFile = cookieFile
@@ -82,14 +88,14 @@ class AutomateBrowser:
             if (self.closeTimeout > 0): # only check if the closeTimeout is non-zero
                 if ((time.time() - self.lastCheckedOpen) > self.closeTimeout):
                     if self.checkBrowserOpen():
-                        print("[AutomateBrowser.browserCloseTimeout] closing browser")
+                        logger.info("[AutomateBrowser.browserCloseTimeout] closing browser")
                         self.closeBrowser()
                 time.sleep(1)
             else:
                 time.sleep(10)
     
     def openBrowser(self):
-        print("[AutomateBrowser.openBrowser]")
+        logger.info("[AutomateBrowser.openBrowser]")
 
         # Open browser
         if (self.driver_executable_path):
@@ -132,7 +138,7 @@ class AutomateBrowser:
         self.lastCheckedOpen = time.time()
     
     def closeBrowser(self):
-        print("[AutomateBrowser.closeBrowser]")
+        logger.info("[AutomateBrowser.closeBrowser]")
 
         # Exit browser
         try:
@@ -140,12 +146,12 @@ class AutomateBrowser:
                 try:
                     self.webdriver.quit()
                 except Exception as e:
-                    print("[AutomateBrowser.closeBrowser] self.webdriver.quit() failed")
+                    logger.error("[AutomateBrowser.closeBrowser] self.webdriver.quit() failed")
                     raise Exception(e)
             else:
-                print("[AutomateBrowser.closeBrowser] browser not open")
+                logger.error("[AutomateBrowser.closeBrowser] browser not open")
         except Exception as e:
-            print(f"[AutomateBrowser.closeBrowser] error: {e}")
+            logger.error(f"[AutomateBrowser.closeBrowser] error: {e}")
             pass
     
     def shutdown(self):
@@ -154,24 +160,24 @@ class AutomateBrowser:
         try:
             self.closeBrowser()
         except Exception as e:
-            print(f"[AutomateBrowser.shutdown] error shutting down: {e}")
+            logger.error(f"[AutomateBrowser.shutdown] error shutting down: {e}")
     
     def saveCookies(self):
         if not self.checkBrowserOpen():
-            print("[AutomateBrowser.saveCookies] browser not open")
+            logger.error("[AutomateBrowser.saveCookies] browser not open")
             return
 
-        print("[AutomateBrowser.saveCookies] saving cookies in " + self.cookieFile)
+        logger.info("[AutomateBrowser.saveCookies] saving cookies in " + self.cookieFile)
         pickle.dump(self.webdriver.get_cookies() , open(self.cookieFile,"wb"))
         #pprint.pp(self.webdriver.get_cookies())
 
     def loadCookies(self):
         if not self.checkBrowserOpen():
-            print("[AutomateBrowser.loadCookies] browser not open")
+            logger.error("[AutomateBrowser.loadCookies] browser not open")
             return
         
         if os.path.exists(self.cookieFile) and os.path.isfile(self.cookieFile):
-            print("[AutomateBrowser.loadCookies] loading cookies from " + self.cookieFile)
+            logger.info("[AutomateBrowser.loadCookies] loading cookies from " + self.cookieFile)
             cookies = pickle.load(open(self.cookieFile, "rb"))
 
             # Enables network tracking so we may use Network.setCookie method
@@ -191,7 +197,7 @@ class AutomateBrowser:
             self.webdriver.execute_cdp_cmd('Network.disable', {})
             return True
 
-        print("[AutomateBrowser.loadCookies] cookie file " + self.cookieFile + " does not exist.")
+        logger.info("[AutomateBrowser.loadCookies] cookie file " + self.cookieFile + " does not exist.")
         return False
     
     def get_shadow_root(self, shadow_host):
@@ -219,15 +225,15 @@ class AutomateBrowser:
     def handleUnknowFormSituation(self):
         # Return a path to screenshot of current page
         # and a list of <form> <input>'s IDs and types
-        print("[AutomateBrowser.handleUnknowFormSituation] Unknown <form> sitation handler")
+        logger.info("[AutomateBrowser.handleUnknowFormSituation] Unknown <form> sitation handler")
         
         # Take screenshot of webpage
         with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as temp_file:
             self.webdriver.save_screenshot(temp_file)
-            print(f"[AutomateBrowser.handleUnknowFormSituation] Saved screenshot to {temp_file}")
+            logger.info(f"[AutomateBrowser.handleUnknowFormSituation] Saved screenshot to {temp_file}")
 
         # Gather list of <form> inputs by ID
-        print("[AutomateBrowser.handleUnknowFormSituation] List of <form> <input>'s on page")
+        logger.info("[AutomateBrowser.handleUnknowFormSituation] List of <form> <input>'s on page")
         form_inputs = []
         try:
             forms = self.wait.until(EC.presence_of_all_elements_located((By.TAG_NAME, "form")))
@@ -241,6 +247,6 @@ class AutomateBrowser:
                         form_inputs.append((input_name, input_type))
                         print(f"[AutomateBrowser.handleUnknowFormSituation] <input name='{input_name}' type='{input_type}'/>")
         except Exception as e:
-            print(f"[AutomateBrowser.handleUnknowFormSituation] Error finding form inputs: {str(e)}")
+            logger.info(f"[AutomateBrowser.handleUnknowFormSituation] Error finding form inputs: {str(e)}")
         
         return temp_file, form_inputs
