@@ -17,9 +17,10 @@ class AutomateBrowser:
                  undetectedDriver=False,
                  browser_executable_path='',
                  driver_executable_path='',
-                 user_data_dir=''):
+                 user_data_dir='',
+                 logger_name='AutomateBrowser'):
         
-        self.ablogger = logging.getLogger(__name__)
+        self.ablogger = logging.getLogger(logger_name)
         self.ablogger.setLevel(logging.DEBUG)
         self.ablogger.propagate = True  # Allow messages to propagate to the root logger
         self.ablogger.info('__init__')
