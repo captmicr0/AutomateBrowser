@@ -23,7 +23,7 @@ class AutomateBrowser:
         self.ablogger = logging.getLogger(logger_name)
         self.ablogger.setLevel(logging.DEBUG)
         self.ablogger.propagate = True  # Allow messages to propagate to the root logger
-        self.ablogger.info('__init__')
+        self.ablogger.info('__init__') # test
 
         self.ablogger.info("[AutomateBrowser.__init__]")
 
